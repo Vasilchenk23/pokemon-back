@@ -1,16 +1,15 @@
 const express = require('express');
 const router = express.Router();
 
-
 router.get('/random', async (req, res) => {
-  const maxPokemonId = 404; 
-  const randomId1 = Math.floor(Math.random() * maxPokemonId) + 1; 
+  const maxPokemonId = 404;
+  const randomId1 = Math.floor(Math.random() * maxPokemonId) + 1;
   const randomId2 = Math.floor(Math.random() * maxPokemonId) + 1;
 
   try {
     const [response1, response2] = await Promise.all([
       fetch(`https://pokeapi.co/api/v2/pokemon/${randomId1}`),
-      fetch(`https://pokeapi.co/api/v2/pokemon/${randomId2}`)
+      fetch(`https://pokeapi.co/api/v2/pokemon/${randomId2}`),
     ]);
 
     const [pokemon1, pokemon2] = await Promise.all([response1.json(), response2.json()]);
@@ -24,7 +23,7 @@ router.get('/random', async (req, res) => {
         id: pokemon2.id,
         name: pokemon2.name,
         image: pokemon2.sprites.front_default || pokemon2.sprites.other['official-artwork'].front_default,
-      }
+      },
     });
   } catch (error) {
     console.error('Error fetching Pokemon data:', error);
@@ -32,5 +31,20 @@ router.get('/random', async (req, res) => {
   }
 });
 
+router.post('/vote', async (req, res) => {
+  const { pokemonId, pokemonName } = req.body;
+
+  if (!pokemonId || !pokemonName) {
+    return res.status(400).json({ error: 'Invalid data' });
+  }
+
+  try {
+    await db.voteForPokemon(pokemonId, pokemonName);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error saving vote:', error);
+    res.status(500).json({ error: 'Failed to save vote' });
+  }
+});
 
 module.exports = router;

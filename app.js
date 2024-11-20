@@ -12,6 +12,8 @@ app.use(bodyParser.json());
 
 app.use('/api/pokemon', pokemonRoutes);
 
+
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
