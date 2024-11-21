@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const supabase = require('../config/db');
 
 router.get('/random', async (req, res) => {
   const maxPokemonId = 404;
@@ -31,6 +32,7 @@ router.get('/random', async (req, res) => {
   }
 });
 
+
 router.post('/vote', async (req, res) => {
   const { pokemonId, pokemonName } = req.body;
 
@@ -39,12 +41,20 @@ router.post('/vote', async (req, res) => {
   }
 
   try {
-    await db.voteForPokemon(pokemonId, pokemonName);
-    res.json({ success: true });
+    const { data, error } = await supabase
+      .from('pokemon')
+      .insert([{ id: pokemonId, pokemon_name: pokemonName, }]);
+
+    if (error) {
+      throw error; 
+    }
+
+    res.json({ success: true, data }); 
   } catch (error) {
     console.error('Error saving vote:', error);
     res.status(500).json({ error: 'Failed to save vote' });
   }
 });
+
 
 module.exports = router;
