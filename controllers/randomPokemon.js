@@ -3,7 +3,7 @@ const router = express.Router();
 const supabase = require('../config/db');
 
 router.get('/random', async (req, res) => {
-  const maxPokemonId = 404;
+  const maxPokemonId = 1000;
   const randomId1 = Math.floor(Math.random() * maxPokemonId) + 1;
   const randomId2 = Math.floor(Math.random() * maxPokemonId) + 1;
 
@@ -32,29 +32,51 @@ router.get('/random', async (req, res) => {
   }
 });
 
-
 router.post('/vote', async (req, res) => {
-  const { pokemonId, pokemonName } = req.body;
+  const { pokemonId, pokemonName, imageUrl } = req.body;
 
-  if (!pokemonId || !pokemonName) {
+  if (!pokemonId || !pokemonName || !imageUrl) {
     return res.status(400).json({ error: 'Invalid data' });
   }
 
   try {
-    const { data, error } = await supabase
+    const { data: existingPokemon, error: fetchError } = await supabase
       .from('pokemon')
-      .insert([{ id: pokemonId, pokemon_name: pokemonName, }]);
+      .select('votes_count')
+      .eq('id', pokemonId)
+      .single();
 
-    if (error) {
-      throw error; 
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      throw fetchError;
     }
 
-    res.json({ success: true, data }); 
+    let votesCount = 0;
+
+    if (existingPokemon) {
+      votesCount = existingPokemon.votes_count || 0; 
+    }
+
+    const { error: upsertError } = await supabase
+      .from('pokemon')
+      .upsert({
+        id: pokemonId,
+        pokemon_name: pokemonName,
+        image_url: imageUrl,
+        votes_count: votesCount + 1,
+      }, { onConflict: 'id' }); 
+
+    if (upsertError) {
+      throw upsertError;
+    }
+
+    res.json({ success: true });
   } catch (error) {
     console.error('Error saving vote:', error);
     res.status(500).json({ error: 'Failed to save vote' });
   }
 });
+
+
 
 
 module.exports = router;
