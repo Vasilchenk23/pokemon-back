@@ -32,6 +32,26 @@ router.get('/random', async (req, res) => {
   }
 });
 
+router.get('/top', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('pokemon')
+      .select('*')
+      .order('votes_count', { ascending: false }) // Сортуємо за спаданням голосів
+      .limit(5); // Обмежуємо до топ-5 записів
+
+    if (error) {
+      throw error;
+    }
+
+    res.json(data); // Повертаємо топ-5 покемонів
+  } catch (error) {
+    console.error('Error fetching top pokemons:', error);
+    res.status(500).json({ error: 'Failed to fetch top pokemons' });
+  }
+});
+
+
 router.post('/vote', async (req, res) => {
   const { pokemonId, pokemonName, imageUrl } = req.body;
 
